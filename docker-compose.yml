@@ -1,0 +1,20 @@
+version: '3'
+
+volumes:
+  postgres_data:
+      driver: local
+
+services:
+  postgres:
+      image: postgres
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+      environment:
+        POSTGRES_DB: "dbtest"
+        POSTGRES_USER: "dbuser"
+        POSTGRES_PASSWORD: "dbpassword"
+        
+      ports:
+        - "5432:5432"
+
+  
