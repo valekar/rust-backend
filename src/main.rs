@@ -2,6 +2,8 @@ use sqlx::postgres::PgConnectOptions;
 use sqlx::Pool;
 use sqlx::{postgres::Postgres, query, PgPool};
 use std::env::var;
+use tide::{Request, Server};
+
 #[async_std::main]
 async fn main() -> Result<(), Error> {
     dotenv::dotenv().ok();
@@ -23,21 +25,27 @@ async fn main() -> Result<(), Error> {
         .database(&database)
         .password(&password);
 
-    let pool: PgPool = Pool::<Postgres>::connect_with(pool_options).await?;
-
-    //let options =
-
-    let rows = query!("select 1 as one").fetch_one(&pool).await?;
-
-    dbg!(rows);
-    //dbg!(db_url);
+    let db_pool: PgPool = Pool::<Postgres>::connect_with(pool_options).await?;
 
     println!("Hello, world!");
 
-    let mut app = tide::new();
-    app.at("/").get(|_| async move { Ok("Hello world") });
+    let mut app: Server<State> = Server::with_state(State { db_pool });
+
+    app.at("/").get(|req: Request<State>| async move {
+        let pool = &req.state().db_pool;
+        let rows = query!("select 1 as one").fetch_one(pool).await?;
+
+        dbg!(rows);
+
+        Ok("Hello world")
+    });
     app.listen("127.0.0.1:8080").await?;
     Ok(())
+}
+
+#[derive(Debug, Clone)]
+struct State {
+    db_pool: PgPool,
 }
 
 #[derive(thiserror::Error, Debug)]
