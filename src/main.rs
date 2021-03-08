@@ -1,7 +1,9 @@
+#[allow(dead_code)]
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use sqlx::postgres::PgConnectOptions;
+//use serde_json::json;
+//use sqlx::prelude::Row;
 use sqlx::Pool;
+use sqlx::{postgres::PgConnectOptions, Connection, PgConnection};
 use sqlx::{postgres::Postgres, query, PgPool};
 use std::{borrow::Borrow, env::var};
 //use tide::Body;
@@ -16,7 +18,11 @@ async fn main() {
     //let db_url = std::env::var("DATABASE_URL")?;
     //let pool: PgPool = Pool::<Postgres>::connect(&db_url).await?;
 
-    let app = server().await;
+    let pool_options = get_pg_pool();
+
+    let db_pool: PgPool = Pool::<Postgres>::connect_with(pool_options).await.unwrap();
+
+    let app = server(db_pool).await;
 
     println!("Hello, world!");
 
@@ -40,7 +46,38 @@ enum Error {
     VarError(#[from] std::env::VarError),
 }
 
-async fn server() -> Server<State> {
+async fn server(db_pool: PgPool) -> Server<State> {
+    let mut app: Server<State> = Server::with_state(State { db_pool });
+
+    app.at("/").get(|req: Request<State>| async move {
+        let pool = &req.state().db_pool;
+        let rows = query!("select count(*) from users").fetch_one(pool).await?;
+
+        //let count: Record = &rows;
+
+        dbg!(&rows);
+
+        //let json = ([1, 2, 3]);
+
+        //let res = Response::new(StatusCode::Ok);
+        //res.set_body(Body::from_json(&json))
+        //Ok(res.body_json(&json)?)
+        //Ok("Hello world")
+
+        let user = User {
+            count: rows.count.unwrap(),
+        };
+
+        let mut res: Response = Response::new(StatusCode::Ok);
+        &res.set_body(Body::from_json(&user)?);
+
+        Ok(res)
+    });
+
+    app
+}
+
+fn get_pg_pool() -> PgConnectOptions {
     let host = var("HOST").unwrap();
     let port: u16 = var("PORT").unwrap().parse::<u16>().unwrap();
     let password = var("PASSWORD").unwrap();
@@ -54,39 +91,13 @@ async fn server() -> Server<State> {
         .database(&database)
         .password(&password);
 
-    let db_pool: PgPool = Pool::<Postgres>::connect_with(pool_options).await.unwrap();
-    let mut app: Server<State> = Server::with_state(State { db_pool });
-
-    app.at("/").get(|req: Request<State>| async move {
-        let pool = &req.state().db_pool;
-        let rows = query!("select count(*) from users").fetch_one(pool).await?;
-
-        dbg!(rows);
-
-        //let json = ([1, 2, 3]);
-
-        //let res = Response::new(StatusCode::Ok);
-        //res.set_body(Body::from_json(&json))
-        //Ok(res.body_json(&json)?)
-        //Ok("Hello world")
-
-        let cat = Cat {
-            name: String::from("Srinivas"),
-        };
-
-        let mut res: Response = Response::new(StatusCode::Ok);
-        &res.set_body(Body::from_json(&cat)?);
-
-        Ok(res)
-    });
-
-    app
+    pool_options
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Cat {
-    name: String,
+struct User {
+    count: i64,
 }
 
 #[cfg(test)]
-mod test {}
+mod tests;

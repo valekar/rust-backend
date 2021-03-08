@@ -19,6 +19,7 @@ thiserror = "1.0.24"
 tide = "0.16.0"
 uuid = "0.8.2"
 futures = { version = "0.3", features = ["compat"] }
+rand = "0.7"
 
 [dev-dependencies]
 assert-json-diff = "2.0.1"
