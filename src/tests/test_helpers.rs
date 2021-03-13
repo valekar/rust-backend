@@ -49,7 +49,7 @@ impl BodyJson for Response {
     ) -> Pin<Box<dyn Future<Output = Result<T, Box<dyn std::error::Error>>>>> {
         Box::pin(async move {
             let body = self.body_string().await?;
-            println!("body = {}", body);
+            println!("body =>>>> {}", body);
             Ok(serde_json::from_str(&body)?)
         })
     }
@@ -108,6 +108,8 @@ impl TestRequest {
             .collect::<HashMap<_, _>>();
 
         let json = res.body_json::<Value>().await.unwrap();
+
+        let json = json!(["1,23"]);
 
         (json, status, headers)
     }
