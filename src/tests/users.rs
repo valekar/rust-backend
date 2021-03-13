@@ -1,10 +1,11 @@
+use std::{thread, time};
+
 use assert_json_diff::assert_json_include;
 
 use crate::tests::test_helpers::*;
 
 #[async_std::test]
 async fn get_users_count() {
-    dotenv::dotenv().ok();
     let mut server = test_setup().await;
 
     let (json, status, _) = get(&format!("/")).send(&mut server).await;
@@ -19,4 +20,8 @@ async fn get_users_count() {
             })
         }
     );
+
+    //let duration = time::Duration::from_millis(5000);
+    //thread::sleep(duration);
+    //server.drop_db().await
 }

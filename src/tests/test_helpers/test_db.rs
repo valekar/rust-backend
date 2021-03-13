@@ -34,14 +34,18 @@ impl TestDb {
     pub fn db(&self) -> PgPool {
         self.db_pool.clone().unwrap()
     }
+
+    pub async fn drop_db(&self) {
+        drop_db(&self.pg_options, &self.db_name).await
+    }
 }
 
-// impl Drop for TestDb {
-//     fn drop(&mut self) {
-//         let _ = self.db_pool.take();
-//         futures::executor::block_on(drop_db(&self.pg_options, &self.db_name))
-//     }
-// }
+impl Drop for TestDb {
+    fn drop(&mut self) {
+        let _ = self.db_pool.take();
+        futures::executor::block_on(drop_db(&self.pg_options, &self.db_name))
+    }
+}
 
 async fn create_db(db_url: &str, db_name: &str) {
     println!("{}", db_url);
@@ -91,17 +95,16 @@ fn generate_db_name(db_url: &str) -> String {
     format!("{}_{}", db_url, suffix)
 }
 
-async fn drop_db(pg_options: &PgConnectOptions, db_name: &str) {
+pub async fn drop_db(pg_options: &PgConnectOptions, db_name: &str) {
     println!("Dropping the database with name {}", db_name);
 
     let mut conn = PgConnection::connect_with(pg_options).await.unwrap();
 
     let sql = format!(
-        r#"Select pg_terminate_backend(pg_stat_activity.pid) 
-    FROM  pg_stat_activity 
-    WHERE pg_stat_activity.datname = '{db_name}' 
-    AND pid <> pg_backend_pid();"#,
-        db_name = db_name
+        r#"SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '{db}';"#,
+        db = db_name
     );
 
     sqlx::query::<Postgres>(&sql)
@@ -109,7 +112,7 @@ async fn drop_db(pg_options: &PgConnectOptions, db_name: &str) {
         .await
         .unwrap();
 
-    let sql = format!(r#"DROP DATABASE "{db}";"#, db = db_name);
+    let sql = format!(r#"DROP DATABASE "{db}" WITH (FORCE);"#, db = db_name);
     sqlx::query::<Postgres>(&sql)
         .execute(&mut conn)
         .await

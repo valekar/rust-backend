@@ -15,6 +15,7 @@ use tide::{
 use serde::de::DeserializeOwned;
 
 pub async fn test_setup() -> TestServer {
+    dotenv::dotenv().ok();
     let test_db = TestDb::new().await;
     let db_pool = test_db.db();
 
@@ -34,6 +35,10 @@ impl TestServer {
 
     pub async fn simulate(&self, req: Request) -> tide::Result<Response> {
         self.server.respond(req).await
+    }
+
+    pub async fn drop_db(&self) {
+        self.test_db.drop_db().await
     }
 }
 
