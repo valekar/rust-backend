@@ -1,6 +1,11 @@
+use futures::StreamExt;
+#[allow(dead_code)]
 //use sqlx::prelude::Connect;
-use sqlx::{postgres::PgConnectOptions, Connection, PgConnection};
-use sqlx::{postgres::Postgres, query, PgPool, Pool};
+use sqlx::{postgres::PgConnectOptions, Connection, PgConnection, Row};
+use sqlx::{
+    postgres::{PgRow, Postgres},
+    query, PgPool, Pool,
+};
 use std::env::var;
 
 #[derive(Debug)]
@@ -8,12 +13,14 @@ pub struct TestDb {
     pg_options: PgConnectOptions,
     db_pool: Option<PgPool>,
     db_name: String,
+    test_db_name: String,
 }
 
 impl TestDb {
     pub async fn new() -> Self {
         let db_url = &var("DATABASE_URL_TEST").unwrap();
         let db_name = generate_db_name("test");
+        let test_db_name = String::from(&var("TEST_DATABASE").unwrap());
         println!("Generated DB Name :: {} ", db_name);
         create_db(db_url, &db_name).await;
 
@@ -28,22 +35,19 @@ impl TestDb {
             pg_options: pg_options_clone,
             db_pool: Some(db_pool),
             db_name: db_name,
+            test_db_name: test_db_name,
         }
     }
 
     pub fn db(&self) -> PgPool {
         self.db_pool.clone().unwrap()
     }
-
-    pub async fn drop_db(&self) {
-        drop_db(&self.pg_options, &self.db_name).await
-    }
 }
 
 impl Drop for TestDb {
     fn drop(&mut self) {
         let _ = self.db_pool.take();
-        futures::executor::block_on(drop_db(&self.pg_options, &self.db_name))
+        futures::executor::block_on(drop_db(&self.pg_options, &self.db_name, &self.test_db_name))
     }
 }
 
@@ -95,26 +99,28 @@ fn generate_db_name(db_url: &str) -> String {
     format!("{}_{}", db_url, suffix)
 }
 
-pub async fn drop_db(pg_options: &PgConnectOptions, db_name: &str) {
+pub async fn drop_db(pg_options: &PgConnectOptions, db_name: &str, test_db: &str) {
     println!("Dropping the database with name {}", db_name);
 
-    let mut conn = PgConnection::connect_with(pg_options).await.unwrap();
-
-    let sql = format!(
-        r#"SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{db}';"#,
-        db = db_name
+    let mut conn: PgConnection = PgConnection::connect_with(pg_options).await.unwrap();
+    let collect_unused_dbs: String = format!(
+        r#"select 'drop database "'||datname||'";'
+        as column_name from pg_database
+        where datistemplate=false AND datname<>'{test_db}' AND datname<>'{db_name}'"#,
+        test_db = test_db,
+        db_name = db_name
     );
 
-    sqlx::query::<Postgres>(&sql)
-        .execute(&mut conn)
+    let res: Vec<String> = query::<Postgres>(&collect_unused_dbs)
+        .map(|row: PgRow| row.get("column_name"))
+        .fetch_all(&mut conn)
         .await
         .unwrap();
 
-    let sql = format!(r#"DROP DATABASE "{db}" WITH (FORCE);"#, db = db_name);
-    sqlx::query::<Postgres>(&sql)
-        .execute(&mut conn)
-        .await
-        .unwrap();
+    for row in res {
+        sqlx::query::<Postgres>(&row)
+            .execute(&mut conn)
+            .await
+            .unwrap();
+    }
 }

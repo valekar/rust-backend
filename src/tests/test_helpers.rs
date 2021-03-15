@@ -2,7 +2,7 @@ mod test_db;
 
 use crate::State;
 use crate::{server, Server};
-use futures::{executor::block_on, prelude::*};
+use futures::prelude::*;
 pub use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -35,10 +35,6 @@ impl TestServer {
 
     pub async fn simulate(&self, req: Request) -> tide::Result<Response> {
         self.server.respond(req).await
-    }
-
-    pub async fn drop_db(&self) {
-        self.test_db.drop_db().await
     }
 }
 

@@ -2,10 +2,10 @@
 use serde::{Deserialize, Serialize};
 //use serde_json::json;
 //use sqlx::prelude::Row;
+use sqlx::postgres::PgConnectOptions;
 use sqlx::Pool;
-use sqlx::{postgres::PgConnectOptions, Connection, PgConnection};
 use sqlx::{postgres::Postgres, query, PgPool};
-use std::{borrow::Borrow, env::var};
+use std::env::var;
 //use tide::Body;
 use tide::Response;
 use tide::{http::StatusCode, Body, Request, Server};
