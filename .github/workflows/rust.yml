@@ -20,7 +20,7 @@ jobs:
       run: docker-compose -f docker-compose.yml up -d
     - name: Check running containers
       run: docker ps -a
-    - name: Build
-      run: cargo build --bin rust-backend
+    # - name: Build
+    #   run: cargo build --bin rust-backend
     - name: Rust Code Coverage
       uses: Swatinem/fucov@v1.0.0
