@@ -22,5 +22,7 @@ jobs:
       run: docker ps -a
     # - name: Build
     #   run: cargo build --bin rust-backend
+    - name: Test
+      run: cargo test 
     - name: Rust Code Coverage
       uses: Swatinem/fucov@v1.0.0
