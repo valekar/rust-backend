@@ -1,4 +1,3 @@
-use futures::StreamExt;
 #[allow(dead_code)]
 //use sqlx::prelude::Connect;
 use sqlx::{postgres::PgConnectOptions, Connection, PgConnection, Row};
