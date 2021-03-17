@@ -29,7 +29,7 @@ jobs:
     - name: Export password
       run: export PGPASSWORD='password';
     - name: Run the migration
-      run: psql postgres://localhost:5434?dbname=test_db&user=test_user&password=test_password -f ./bin/backend/setup.sql
+      run: psql postgres://localhost:5434?dbname=test_db&user=test_user&password=test_password 
     #  run: psql -h localhost -d test_db -U test_user -p 5434 -W test_password -a -q -f ./bin/backend/setup.sql
     #- name: Test
     #  run: cargo test 
