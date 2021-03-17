@@ -22,7 +22,13 @@ jobs:
       run: docker ps -a
     # - name: Build
     #   run: cargo build --bin rust-backend
-    - name: Test
-      run: cargo test 
-    - name: Rust Code Coverage
-      uses: Swatinem/fucov@v1.0.0
+    - name: Install psql
+      run: sudo apt-get install -y postgresql-client
+    - name: Check PSQL version
+      run: psql --version
+    - name: Run the migration
+      run: psql -h localhost -d test_db -U test_user -p 5434 -W test_password -a -q -f ./bin/backend/setup.sql
+    #- name: Test
+    #  run: cargo test 
+    #- name: Rust Code Coverage
+    #  uses: Swatinem/fucov@v1.0.0
