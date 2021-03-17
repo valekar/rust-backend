@@ -24,9 +24,9 @@ jobs:
       run: sudo apt-get install -y postgresql-client
     - name: Check PSQL version
       run: psql --version
-    - name: Run dev database migration
+    - name: Run database migration
       run: psql postgres://dbuser:dbpassword@localhost:5432/dbbackend -f ./bin/backend/setup.sql
-    - name: Run dev build
+    - name: Run build
       run: cargo build --bin rust-backend 
     - name: Run TEST migration
       run: psql postgres://test_user:test_password@localhost:5434/test_db -f ./bin/backend/setup.sql
