@@ -2,7 +2,7 @@ mod test_db;
 
 use crate::State;
 use crate::{server, Server};
-use futures::{executor::block_on, prelude::*};
+use futures::prelude::*;
 pub use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -15,6 +15,7 @@ use tide::{
 use serde::de::DeserializeOwned;
 
 pub async fn test_setup() -> TestServer {
+    dotenv::dotenv().ok();
     let test_db = TestDb::new().await;
     let db_pool = test_db.db();
 
