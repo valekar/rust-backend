@@ -26,12 +26,11 @@ jobs:
       run: sudo apt-get install -y postgresql-client
     - name: Check PSQL version
       run: psql --version
-    - name: Export password
-      run: export PGPASSWORD='password';
-    - name: Run the migration
+    - name: Run dev database migration
+      run: psql postgres://dbuser:dbpassword@localhost:5432/dbbackend -f ./bin/backend/setup.sql
+    - name: Run TEST migration
       run: psql postgres://test_user:test_password@localhost:5434/test_db -f ./bin/backend/setup.sql
-    #  run: psql -h localhost -d test_db -U test_user -p 5434 -W test_password -a -q -f ./bin/backend/setup.sql
     - name: Test
-      run: cargo test 
+      run: cargo build --bin rust-backend 
     #- name: Rust Code Coverage
     #  uses: Swatinem/fucov@v1.0.0
